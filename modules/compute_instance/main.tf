@@ -95,7 +95,7 @@ resource "google_compute_instance_from_template" "compute_instance" {
       network            = network_interface.value.network
       subnetwork         = network_interface.value.subnetwork
       subnetwork_project = network_interface.value.subnetwork_project
-      network_ip         = length(network_interface.value.network_ip) > 0 ? network_interface.value.network_ip : null
+      network_ip         = network_interface.value.network_ip
       nic_type           = network_interface.value.nic_type
       stack_type         = network_interface.value.stack_type
       queue_count        = network_interface.value.queue_count
