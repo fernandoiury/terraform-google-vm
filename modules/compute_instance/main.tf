@@ -26,7 +26,15 @@ locals {
 
   # When no network or subnetwork has been defined, we want to use the settings from
   # the template instead.
-  network_interface = length(format("%s%s", var.network, var.subnetwork)) == 0 ? [] : [1]
+  network_interface = length(format("%s%s", var.network, var.subnetwork)) == 0 ? [] : [{
+    network = var.network
+    subnetwork = var.subnetwork
+    subnetwork_project = var.subnetwork_project
+    network_ip = length(var.static_ips) == 0 ? "" : element(local.static_ips, count.index) 
+    access_config = var.access_config
+    ipv6_access_config = var.ipv6_access_config
+    alias_ip_ranges = var.alias_ip_ranges
+  }]
 }
 
 ###############
@@ -57,40 +65,7 @@ resource "google_compute_instance_from_template" "compute_instance" {
   }
 
   dynamic "network_interface" {
-    for_each = local.network_interface
-
-    content {
-      network            = var.network
-      subnetwork         = var.subnetwork
-      subnetwork_project = var.subnetwork_project
-      network_ip         = length(var.static_ips) == 0 ? "" : element(local.static_ips, count.index)
-      dynamic "access_config" {
-        for_each = var.access_config
-        content {
-          nat_ip       = access_config.value.nat_ip
-          network_tier = access_config.value.network_tier
-        }
-      }
-
-      dynamic "ipv6_access_config" {
-        for_each = var.ipv6_access_config
-        content {
-          network_tier = ipv6_access_config.value.network_tier
-        }
-      }
-
-      dynamic "alias_ip_range" {
-        for_each = var.alias_ip_ranges
-        content {
-          ip_cidr_range         = alias_ip_range.value.ip_cidr_range
-          subnetwork_range_name = alias_ip_range.value.subnetwork_range_name
-        }
-      }
-    }
-  }
-
-  dynamic "network_interface" {
-    for_each = var.additional_networks
+    for_each = merge(local.network_interface ,var.additional_networks)
     content {
       network            = network_interface.value.network
       subnetwork         = network_interface.value.subnetwork
